@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppointmentSlotBlock;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -42,6 +43,7 @@ class AppointmentController extends Controller
                     'Health Assessment',
                 ]),
             ],
+            'period' => ['sometimes', 'required', Rule::in(['morning', 'afternoon'])],
         ]);
 
         if ($validator->fails()) {
@@ -94,8 +96,49 @@ class AppointmentController extends Controller
             ->map(fn ($time) => substr((string) $time, 0, 5))
             ->all();
 
-        $availableSlots = array_values(array_diff($allSlots, $bookedSlots));
-        $unavailableSlots = array_values(array_intersect($allSlots, $bookedSlots));
+        $blocks = AppointmentSlotBlock::query()
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->where(function ($query) use ($request) {
+                $query->whereNull('department')
+                    ->orWhere('department', $request->department);
+            })
+            ->get(['start_time', 'end_time']);
+
+        $periodSlots = array_values(array_filter($allSlots, function ($slot) use ($request) {
+            if ($request->input('period') === 'morning') {
+                return $slot < '12:00';
+            }
+
+            if ($request->input('period') === 'afternoon') {
+                return $slot >= '12:00';
+            }
+
+            return true;
+        }));
+
+        $blockedSlots = array_values(array_filter($periodSlots, function ($slot) use ($blocks) {
+            foreach ($blocks as $block) {
+                if ($block->start_time === null && $block->end_time === null) {
+                    return true;
+                }
+
+                $start = substr((string) $block->start_time, 0, 5);
+                $end = substr((string) $block->end_time, 0, 5);
+
+                if ($slot >= $start && $slot < $end) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
+
+        $unavailableSlots = array_values(array_unique([
+            ...array_intersect($periodSlots, $bookedSlots),
+            ...$blockedSlots,
+        ]));
+        $availableSlots = array_values(array_diff($periodSlots, $unavailableSlots));
 
         return response()->json([
             'date' => $date,
@@ -141,6 +184,29 @@ class AppointmentController extends Controller
 
         $date = $request->appointment_date;
         $time = $request->appointment_time;
+
+        $isBlocked = AppointmentSlotBlock::query()
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->where(function ($query) use ($request) {
+                $query->whereNull('department')
+                    ->orWhere('department', $request->department);
+            })
+            ->get(['start_time', 'end_time'])
+            ->contains(function ($block) use ($time) {
+                if ($block->start_time === null && $block->end_time === null) {
+                    return true;
+                }
+
+                return $time >= substr((string) $block->start_time, 0, 5)
+                    && $time < substr((string) $block->end_time, 0, 5);
+            });
+
+        if ($isBlocked) {
+            return response()->json([
+                'message' => 'That appointment slot has been blocked by the clinic.',
+            ], 422);
+        }
 
         // Only permit times included in the demo clinic schedule.
             $dayOfWeek = (int) date('N', strtotime($date));

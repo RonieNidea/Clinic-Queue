@@ -15,15 +15,18 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'student_number' => 'required|string|max:50|unique:users,student_number',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
+            'student_number' => $validated['student_number'],
             'email' => $validated['email'],
             'password' => $validated['password'],
         ]);
+        $user->refresh();
 
         $token = $user->createToken('clinicqueue-token')->plainTextToken;
 
@@ -44,7 +47,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);

@@ -35,6 +35,21 @@ function AuthForm({
           </label>
         )}
 
+        {isRegister && (
+          <label>
+            Student number
+            <input
+              type="text"
+              name="student_number"
+              value={form.student_number}
+              onChange={handleChange}
+              autoComplete="off"
+              maxLength={50}
+              required
+            />
+          </label>
+        )}
+
         <label>
           Email address
           <input

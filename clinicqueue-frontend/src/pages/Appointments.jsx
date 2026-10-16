@@ -85,6 +85,7 @@ const Appointments = ({ user, openPage }) => {
   const [appointments, setAppointments] = useState([]);
   const [appointmentDate, setAppointmentDate] = useState(today());
   const [department, setDepartment] = useState(DEPARTMENTS[0]);
+  const [period, setPeriod] = useState('all');
   const [patientName, setPatientName] = useState(user?.name || '');
   const [reason, setReason] = useState('');
 
@@ -92,19 +93,12 @@ const Appointments = ({ user, openPage }) => {
   const [unavailableSlots, setUnavailableSlots] = useState([]);
   const [selectedTime, setSelectedTime] = useState('');
 
-  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(true);
   const [booking, setBooking] = useState(false);
-  const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [loadingAppointments, setLoadingAppointments] = useState(true);
 
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-
-  // Keep the patient name synchronized if the user information loads later.
-  useEffect(() => {
-    if (user?.name) {
-      setPatientName(user.name);
-    }
-  }, [user?.name]);
 
   // Retrieve the logged-in user's appointments.
   const loadAppointments = async () => {
@@ -122,9 +116,26 @@ const Appointments = ({ user, openPage }) => {
     }
   };
 
+  const fetchSlots = async (date, dept, timePeriod) => {
+    const query = new URLSearchParams({
+      appointment_date: date,
+      department: dept,
+    });
+
+    if (timePeriod !== 'all') {
+      query.set('period', timePeriod);
+    }
+
+    return apiRequest(`/appointments/available-slots?${query.toString()}`);
+  };
+
   // Retrieve available and unavailable time slots for the selected date
   // and department. The backend handles weekday, Saturday, and Sunday rules.
-  const loadSlots = async (date = appointmentDate, dept = department) => {
+  const loadSlots = async (
+    date = appointmentDate,
+    dept = department,
+    timePeriod = period
+  ) => {
     if (!date || !dept) return;
 
     setLoadingSlots(true);
@@ -133,14 +144,7 @@ const Appointments = ({ user, openPage }) => {
     setUnavailableSlots([]);
 
     try {
-      const query = new URLSearchParams({
-        appointment_date: date,
-        department: dept,
-      });
-
-      const data = await apiRequest(
-        `/appointments/available-slots?${query.toString()}`
-      );
+      const data = await fetchSlots(date, dept, timePeriod);
 
       setAvailableSlots(
         Array.isArray(data.available_slots) ? data.available_slots : []
@@ -164,15 +168,67 @@ const Appointments = ({ user, openPage }) => {
 
   // Load appointments when the page opens.
   useEffect(() => {
-    loadAppointments();
+    let active = true;
+
+    apiRequest('/appointments')
+      .then((data) => {
+        if (active) {
+          setAppointments(
+            Array.isArray(data.appointments) ? data.appointments : []
+          );
+        }
+      })
+      .catch((err) => {
+        if (active) setError(err.message || 'Unable to load appointments.');
+      })
+      .finally(() => {
+        if (active) setLoadingAppointments(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Refresh time slots when the date or department changes.
   useEffect(() => {
+    let active = true;
+
+    fetchSlots(appointmentDate, department, period)
+      .then((data) => {
+        if (!active) return;
+        setAvailableSlots(
+          Array.isArray(data.available_slots) ? data.available_slots : []
+        );
+        setUnavailableSlots(
+          Array.isArray(data.unavailable_slots) ? data.unavailable_slots : []
+        );
+        if (data.message) setMessage(data.message);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setAvailableSlots([]);
+        setUnavailableSlots([]);
+        setError(err.message || 'Unable to load available time slots.');
+      })
+      .finally(() => {
+        if (active) setLoadingSlots(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [appointmentDate, department, period]);
+
+  const changeSlotFilter = (setter, value) => {
     setMessage('');
     setError('');
-    loadSlots(appointmentDate, department);
-  }, [appointmentDate, department]);
+    setSelectedTime('');
+    setAvailableSlots([]);
+    setUnavailableSlots([]);
+    setLoadingSlots(true);
+    setter(value);
+  };
 
   // Submit a new appointment to the Laravel API.
   const handleBooking = async (event) => {
@@ -310,7 +366,7 @@ const Appointments = ({ user, openPage }) => {
             <select
               id="department"
               value={department}
-              onChange={(event) => setDepartment(event.target.value)}
+              onChange={(event) => changeSlotFilter(setDepartment, event.target.value)}
               required
             >
               {DEPARTMENTS.map((item) => (
@@ -328,9 +384,23 @@ const Appointments = ({ user, openPage }) => {
               type="date"
               value={appointmentDate}
               min={today()}
-              onChange={(event) => setAppointmentDate(event.target.value)}
+              onChange={(event) => changeSlotFilter(setAppointmentDate, event.target.value)}
               required
             />
+          </div>
+
+          <div className="appointment-form-group">
+            <label htmlFor="appointmentPeriod">Time of Day</label>
+            <select
+              id="appointmentPeriod"
+              value={period}
+              onChange={(event) => changeSlotFilter(setPeriod, event.target.value)}
+              required
+            >
+              <option value="all">All available times</option>
+              <option value="morning">Morning</option>
+              <option value="afternoon">Afternoon</option>
+            </select>
           </div>
 
           <div className="appointment-form-group">

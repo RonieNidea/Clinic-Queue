@@ -53,6 +53,22 @@ In order to ensure that the Laravel community is welcoming to all, please review
 
 If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
+## Clinic visit records
+
+Run `php artisan migrate` to add student numbers, patient/staff roles, visit records, ratings, and appointment slot blocks. New patient registrations require a unique student number. Existing accounts without one can still be found by their internal account ID. To grant staff access, first create or identify a trusted account, then promote it explicitly:
+
+```sh
+php artisan tinker
+```
+
+```php
+$user = App\Models\User::where('email', 'clinic.staff@example.com')->firstOrFail();
+$user->role = 'staff';
+$user->save();
+```
+
+Staff accounts can search students and visit records, record visit summaries and private clinic notes, print visit slips, and manage appointment slot blocks. Patients can view their own summaries and notes, submit one rating for each completed visit, and search available appointment times by morning or afternoon. Visit summaries, care notes, health notes, and feedback are encrypted using Laravel's `APP_KEY`; keep that key backed up and confidential. Staff routes enforce the staff role on the server; public registration cannot assign it.
+
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
