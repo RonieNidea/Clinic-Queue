@@ -1,0 +1,136 @@
+.cq-visits-panel {
+  margin-bottom: 24px;
+}
+
+.cq-visit-list {
+  display: grid;
+  gap: 14px;
+}
+
+.cq-visit-card {
+  padding: 20px;
+  border: 1px solid #e7edf5;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.cq-visit-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cq-visit-date {
+  color: #7c8ba3;
+  font-size: 12px;
+}
+
+.cq-visit-heading h3 {
+  margin: 5px 0 0;
+  color: #243958;
+  font-size: 17px;
+}
+
+.cq-visit-summary,
+.cq-visit-card > p {
+  color: #43536d;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.cq-health-notes {
+  margin-top: 13px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: #f5f8fc;
+  color: #43536d;
+  font-size: 13px;
+}
+
+.cq-health-notes summary {
+  color: #2866b2;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cq-health-notes p {
+  margin-bottom: 0;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.cq-review-form {
+  display: grid;
+  gap: 12px;
+  max-width: 520px;
+  margin-top: 18px;
+}
+
+.cq-review-form label {
+  display: grid;
+  gap: 7px;
+  color: #354763;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cq-review-form select,
+.cq-review-form textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #dce4ef;
+  border-radius: 8px;
+  background: #fbfcff;
+  color: #263a58;
+  font: inherit;
+}
+
+.cq-review-form textarea {
+  resize: vertical;
+}
+
+.cq-review-form .cq-submit-button {
+  justify-self: start;
+  min-height: 42px;
+  margin-top: 0;
+}
+
+.cq-visit-rating {
+  color: #a65c00 !important;
+  font-weight: 700;
+}
+
+.cq-visit-rating span {
+  color: #43536d;
+  font-weight: 400;
+}
+
+.cq-visit-message,
+.cq-visit-error {
+  padding: 11px 13px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.cq-visit-message {
+  background: #eaf9ef;
+  color: #176b3a;
+}
+
+.cq-visit-error {
+  background: #fff0f0;
+  color: #a52828;
+}
+
+@media (max-width: 600px) {
+  .cq-visit-card {
+    padding: 15px;
+  }
+
+  .cq-visit-heading {
+    flex-direction: column;
+  }
+}

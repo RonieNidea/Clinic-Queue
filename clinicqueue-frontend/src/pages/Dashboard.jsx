@@ -1,5 +1,6 @@
 
 import '../Dashboard.css';
+import PatientVisits from '../components/PatientVisits';
 
 function Dashboard({
   user,
@@ -268,6 +269,8 @@ function Dashboard({
             </div>
           )}
         </section>
+
+        <PatientVisits />
 
         <p className="cq-dashboard-footer">
           ClinicQueue · Your clinic visits, organized in one place.

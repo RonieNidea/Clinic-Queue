@@ -1,4 +1,4 @@
-function Navbar({ page, token, loading, openPage, handleLogout }) {
+function Navbar({ page, token, user, loading, openPage, handleLogout }) {
   return (
     <header className="navbar">
       <a
@@ -29,8 +29,18 @@ function Navbar({ page, token, loading, openPage, handleLogout }) {
                 className="secondary-button"
                 onClick={() => openPage('dashboard')}
             >
-                My Dashboard
+                {user?.role === 'staff' ? 'Queue Dashboard' : 'My Dashboard'}
             </button>
+
+            {user?.role === 'staff' && (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => openPage('staff')}
+              >
+                Staff Records
+              </button>
+            )}
 
             <button
                 type="button"

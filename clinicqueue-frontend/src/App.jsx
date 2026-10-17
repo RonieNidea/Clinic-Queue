@@ -11,9 +11,11 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Appointments from './pages/Appointments';
+import StaffRecords from './pages/StaffRecords';
 
 const emptyForm = {
   name: '',
+  student_number: '',
   email: '',
   password: '',
   password_confirmation: '',
@@ -102,7 +104,7 @@ function App() {
           setToken(savedToken);
           setUser(account);
           setQueues(queueData.queues || []);
-          setPage('dashboard');
+          setPage(account.role === 'staff' ? 'staff' : 'dashboard');
         }
       } catch {
         if (!cancelled) {
@@ -128,6 +130,21 @@ function App() {
 
   // Navigate between pages and clear old notifications.
   function openPage(nextPage) {
+    if (nextPage === 'staff' && user?.role !== 'staff') {
+      setError('Staff access is available only to authorized clinic staff.');
+      return;
+    }
+
+    if (
+      ['dashboard', 'appointments'].includes(nextPage) &&
+      !token
+    ) {
+      setPage('login');
+      setMessage('');
+      setError('Please log in to access your clinic account.');
+      return;
+    }
+
     setPage(nextPage);
     setMessage('');
     setError('');
@@ -184,7 +201,7 @@ function App() {
       setUser(data.user || null);
       setForm({ ...emptyForm });
       setQueues([]);
-      setPage('dashboard');
+      setPage(data.user?.role === 'staff' ? 'staff' : 'dashboard');
 
       setMessage(
         isRegister
@@ -301,6 +318,7 @@ function App() {
       <Navbar
         page={page}
         token={token}
+        user={user}
         loading={loading}
         openPage={openPage}
         handleLogout={handleLogout}
@@ -365,11 +383,29 @@ function App() {
 
           
           {page === 'appointments' && (
-            <Appointments
-              openPage={openPage}
-              user={user}
-              token={token}
-            />
+            token ? (
+              <Appointments openPage={openPage} user={user} token={token} />
+            ) : (
+              <Login {...authProps} />
+            )
+          )}
+
+          {page === 'staff' && (
+            user?.role === 'staff' ? (
+              <StaffRecords openPage={openPage} />
+            ) : (
+              <Dashboard
+                user={user}
+                patientName={patientName}
+                setPatientName={setPatientName}
+                department={department}
+                setDepartment={setDepartment}
+                queues={queues}
+                queueLoading={queueLoading}
+                loading={loading}
+                joinQueue={joinQueue}
+              />
+            )
           )}
         </>
       )}
